@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Assistant d'Expérience de Conduite</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+        }
+
+        header, footer {
+            background-color: #333;
+            color: #fff;
+            text-align: center;
+            padding: 1em;
+        }
+
+        main {
+            max-width: 600px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #fff;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+        }
+
+        form {
+            display: grid;
+            gap: 16px;
+            background-color: #3498db;
+            padding: 20px;
+            border-radius: 8px;
+        }
+
+        label {
+            font-size: 16px;
+            margin-bottom: 8px;
+            color: #fff;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 16px;
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+
+        button {
+            background-color: #333;
+            color: #fff;
+            padding: 12px 20px;
+            border: none;
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+
+        button:hover {
+            background-color: #555;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        table, th, td {
+            border: 1px solid #333;
+        }
+
+        th, td {
+            padding: 10px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #333;
+            color: #fff;
+        }
+    </style>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const form = document.querySelector('form');
+            const bilanPage = document.getElementById('bilanPage');
+            const retourFormulaireButton = document.getElementById('retourFormulaireButton');
+            const recommencerButton = document.getElementById('recommencerButton');
+            const bilanLink = document.getElementById('bilanLink');
+
+            const conditionsMeteo = [{"idConditionMeteo":1,"conditionMeteo":"Soleil"},{"idConditionMeteo":2,"conditionMeteo":"Nuageux"},{"idConditionMeteo":3,"conditionMeteo":"Pluie"},{"idConditionMeteo":4,"conditionMeteo":"Neige"},{"idConditionMeteo":5,"conditionMeteo":"Orage"}];
+            const densiteTrafic = [{"idDensiteTrafic":1,"densiteTrafic":"Faible"},{"idDensiteTrafic":2,"densiteTrafic":"Modérée"},{"idDensiteTrafic":3,"densiteTrafic":"Élevée"}];
+            const typeRoute = [{"idTypeRoute":1,"typeRoute":"Autoroute"},{"idTypeRoute":2,"typeRoute":"Route nationale"},{"idTypeRoute":3,"typeRoute":"Route départementale"},{"idTypeRoute":4,"typeRoute":"Voie urbaine"}];
+
+            function fillDropdownList(data, dropdownId) {
+                const dropdown = document.getElementById(dropdownId);
+                data.forEach(item => {
+                    const option = document.createElement("option");
+                    option.value = item[`id${dropdownId.charAt(0).toUpperCase() + dropdownId.slice(1)}`];
+                    option.textContent = item[`${dropdownId}`];
+                    dropdown.appendChild(option);
+                });
+            }
+
+            fillDropdownList(conditionsMeteo, "conditionMeteo");
+            fillDropdownList(densiteTrafic, "densiteTrafic");
+            fillDropdownList(typeRoute, "typeRoute");
+
+            form.addEventListener('submit', function(event) {
+                event.preventDefault();
+
+                const formData = {
+                    date: form.date.value,
+                    heureDepart: form.heureDepart.value,
+                    heureArrivee: form.heureArrivee.value,
+                    distanceTotaleParcourue: form.distanceTotaleParcourue.value,
+                    idConditionMeteo: form.conditionMeteo.value,
+                    idDensiteTrafic: form.densiteTrafic.value,
+                    idTypeRoute: form.typeRoute.value,
+                };
+
+                let experiencesConduite = JSON.parse(localStorage.getItem('experiencesConduite')) || [];
+                const lastExperience = experiencesConduite[experiencesConduite.length - 1];
+
+                formData.idExperienceConduite = lastExperience ? lastExperience.idExperienceConduite + 1 : 1;
+                experiencesConduite.push(formData);
+
+                localStorage.setItem('experiencesConduite', JSON.stringify(experiencesConduite));
+
+                form.reset();
+            });
+
+            bilanLink.addEventListener('click', function(event) {
+                event.preventDefault();
+                showBilan();
+            });
+
+            retourFormulaireButton.addEventListener('click', function() {
+                showFormulaire();
+            });
+
+            recommencerButton.addEventListener('click', function() {
+                localStorage.removeItem('experiencesConduite');
+                showFormulaire();
+            });
+
+            function showBilan() {
+                console.log('Show Bilan called');
+                const experiencesConduite = JSON.parse(localStorage.getItem('experiencesConduite')) || [];
+                console.log('Experiences:', experiencesConduite);
+
+                const distanceTotale = experiencesConduite.reduce((total, experience) => {
+                    const kilometres = parseFloat(experience.distanceTotaleParcourue);
+                    return isNaN(kilometres) ? total : total + kilometres;
+                }, 0);
+
+                const conditionsMeteoMap = {
+                    1: "Soleil",
+                    2: "Nuageux",
+                    3: "Pluie",
+                    4: "Neige",
+                    5: "Orage"
+                };
+
+                const densiteTraficMap = {
+                    1: "Faible",
+                    2: "Modérée",
+                    3: "Élevée"
+                };
+
+                const typeRouteMap = {
+                    1: "Autoroute",
+                    2: "Route nationale",
+                    3: "Route départementale",
+                    4: "Voie urbaine"
+                };
+
+                const statsMeteo = {};
+                const statsTrafic = {};
+                const statsTypeRoute = {};
+
+                experiencesConduite.forEach(experience => {
+                    const meteo = conditionsMeteoMap[experience.idConditionMeteo];
+                    statsMeteo[meteo] = (statsMeteo[meteo] || 0) + 1;
+
+                    const trafic = densiteTraficMap[experience.idDensiteTrafic];
+                    statsTrafic[trafic] = (statsTrafic[trafic] || 0) + 1;
+
+                    const typeRoute = typeRouteMap[experience.idTypeRoute];
+                    statsTypeRoute[typeRoute] = (statsTypeRoute[typeRoute] || 0) + 1;
+                });
+
+                const bilanContent = `
+                    <h2>Bilan des Expériences de Conduite</h2>
+                    <p>Distance Totale Parcourue : ${distanceTotale} km</p>
+                    <h3>Statistiques par rapport aux variables</h3>
+                    <ul>
+                        <li>Météo :
+                            <ul>
+                                <li>Soleil : ${statsMeteo.Soleil || 0}</li>
+                                <li>Nuageux : ${statsMeteo.Nuageux || 0}</li>
+                                <li>Pluie : ${statsMeteo.Pluie || 0}</li>
+                                <li>Neige : ${statsMeteo.Neige || 0}</li>
+                                <li>Orage : ${statsMeteo.Orage || 0}</li>
+                            </ul>
+                        </li>
+                        <li>Densité du Trafic :
+                            <ul>
+                                <li>Faible : ${statsTrafic.Faible || 0}</li>
+                                <li>Modérée : ${statsTrafic.Modérée || 0}</li>
+                                <li>Élevée : ${statsTrafic.Élevée || 0}</li>
+                            </ul>
+                        </li>
+                        <li>Type de Route :
+                            <ul>
+                                <li>Autoroute : ${statsTypeRoute.Autoroute || 0}</li>
+                                <li>Route nationale : ${statsTypeRoute["Route nationale"] || 0}</li>
+                                <li>Route départementale : ${statsTypeRoute["Route départementale"] || 0}</li>
+                                <li>Voie urbaine : ${statsTypeRoute["Voie urbaine"] || 0}</li>
+                            </ul>
+                        </li>
+                    </ul>
+                    <button id="retourFormulaireButton" class="hidden">Retour au Formulaire</button>
+                    <button id="recommencerButton">Recommencer</button>
+                    <h3>Tableau des Expériences</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Date</th>
+                                <th>Heure de Départ</th>
+                                <th>Heure d'Arrivée</th>
+                                <th>Distance Totale Parcourue (km)</th>
+                                <th>Condition Météo</th>
+                                <th>Densité du Trafic</th>
+                                <th>Type de Route</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${experiencesConduite.map(experience => `
+                                <tr>
+                                    <td>${experience.idExperienceConduite}</td>
+                                    <td>${experience.date}</td>
+                                    <td>${experience.heureDepart}</td>
+                                    <td>${experience.heureArrivee}</td>
+                                    <td>${experience.distanceTotaleParcourue}</td>
+                                    <td>${conditionsMeteoMap[experience.idConditionMeteo]}</td>
+                                    <td>${densiteTraficMap[experience.idDensiteTrafic]}</td>
+                                    <td>${typeRouteMap[experience.idTypeRoute]}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                `;
+
+                bilanPage.innerHTML = bilanContent;
+                form.classList.add('hidden');
+                bilanPage.classList.remove('hidden');
+
+                retourFormulaireButton.classList.remove('hidden');
+                recommencerButton.classList.remove('hidden');
+                bilanLink.classList.add('hidden');
+            }
+
+            function showFormulaire() {
+                console.log('Show Formulaire called');
+                form.classList.remove('hidden');
+                bilanPage.classList.add('hidden');
+
+                retourFormulaireButton.classList.add('hidden');
+                recommencerButton.classList.add('hidden');
+                bilanLink.classList.remove('hidden');
+            }
+        });
+    </script>
+</head>
+<body>
+    <header>
+        <h1>Assistant d'Expérience de Conduite</h1>
+    </header>
+
+    <main>
+        <form>
+            <label for="date">Date :</label>
+            <input type="date" id="date" name="date" required>
+
+            <label for="heureDepart">Heure de Départ :</label>
+            <input type="time" id="heureDepart" name="heureDepart" required>
+
+            <label for="heureArrivee">Heure d'Arrivée :</label>
+            <input type="time" id="heureArrivee" name="heureArrivee" required>
+
+            <label for="distanceTotaleParcourue">Distance Totale Parcourue :</label>
+            <input type="number" id="distanceTotaleParcourue" name="distanceTotaleParcourue" required>
+
+            <label for="conditionMeteo">Condition Météo :</label>
+            <select id="conditionMeteo" name="conditionMeteo" required></select>
+
+            <label for="densiteTrafic">Densité du Trafic :</label>
+            <select id="densiteTrafic" name="densiteTrafic" required></select>
+
+            <label for="typeRoute">Type de Route :</label>
+            <select id="typeRoute" name="typeRoute" required></select>
+
+            <button type="submit">Enregistrer</button>
+        </form>
+
+        <div id="bilanPage" class="hidden"></div>
+    </main>
+
+    <footer>
+        <p><a href="#" id="bilanLink">Voir le Bilan</a></p>
+        <button id="retourFormulaireButton" class="hidden">Retour au Formulaire</button>
+        <button id="recommencerButton" class="hidden">Recommencer</button>
+    </footer>
+</body>
+</html>
+
+
